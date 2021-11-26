@@ -44,7 +44,7 @@ def main():
         df = create_df(item)
         df = select(df)
         num += 1
-        df.to_excel(f'./output/result{num}.xlsx', index=False)
+        df.to_excel(f'./output/result{num}.xlsx')
 
 
 if __name__ == '__main__':
