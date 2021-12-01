@@ -3,8 +3,10 @@ import pandas as pd
 from glob import glob
 import os
 
-columns_res = ['UA_IPS_UP', 'UA_IPS_DOWN', 'UA_BEI_UP', 'UA_BEI_DOWN']
 look_for = 'MSP/LABEO (₴/MWh)'
+zone = ['CA_UA_IPS', 'CA_UA_BEI']
+direction = ['Down', 'Up']
+zone_direction = [f'{y} {x}' for y in set(zone) for x in set(direction)]
 
 
 def create_df(path):
@@ -13,29 +15,27 @@ def create_df(path):
     df.index = df['index']
     df = df.drop(columns=['Date', 'Settlement Period', 'index'])
     df = df.sort_values(['index'])
-    # print(df.to_string())
     return df
 
 
+def manipulation(df, time_index, col):
+    mod_col_list = col.split()
+    return df.loc[(df['Market Balance Area'] == mod_col_list[0]) & (df['Direction'] == mod_col_list[1])
+                  & (df.index == time_index)][look_for][0]
+
+
 def select(df):
-    df_new = pd.DataFrame(columns=columns_res, index=df.index)
+    df_new = pd.DataFrame(columns=zone_direction, index=df.index)
     for item in df_new.index:
-        df_new.loc[[item], columns_res[0]] = df.loc[
-            (df['Market Balance Area'] == 'CA_UA_IPS') & (df['Direction'] == 'Up') & (df.index == item)][look_for][0]
-        df_new.loc[[item], columns_res[1]] = df.loc[
-            (df['Market Balance Area'] == 'CA_UA_IPS') & (df['Direction'] == 'Down') & (df.index == item)][look_for][0]
-        df_new.loc[[item], columns_res[2]] = df.loc[
-            (df['Market Balance Area'] == 'CA_UA_BEI') & (df['Direction'] == 'Up') & (df.index == item)][look_for][0]
-        df_new.loc[[item], columns_res[3]] = df.loc[
-            (df['Market Balance Area'] == 'CA_UA_BEI') & (df['Direction'] == 'Down') & (df.index == item)][look_for][0]
-    df_new.replace(0.01, '-', regex=True, inplace=True)
-    print(df_new.to_string())
+        for col in df_new.columns:
+            df_new.loc[item, col] = manipulation(df, item, col)
+    df_new = df_new.drop_duplicates()
     return df_new
 
 
 def main():
-    num = 0
     cwd = os.path.dirname(os.path.abspath(__file__))
+    num = 0
     target = os.path.join(cwd, 'input', '*.xlsx')
     dir_list = glob(target)
     if not os.path.isdir("output"):
@@ -44,7 +44,7 @@ def main():
         df = create_df(item)
         df = select(df)
         num += 1
-        df.to_excel(f'./output/result{num}.xlsx')
+        df.to_excel(f'{cwd}/output/result{num}.xlsx')
 
 
 if __name__ == '__main__':
