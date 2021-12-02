@@ -20,21 +20,16 @@ def create_df(path):
     return df
 
 
-def manipulation(df, time_index, col):
+def manipulation_fast(df, col):
     mod_col_list = col.split()
-    results = df.loc[(df['Market Balance Area'] == mod_col_list[0]) & (df['Direction'] == mod_col_list[1]) & (
-                time_index == df.index)][look_for]
-    if not results.empty:
-        return results[0]
-    else:
-        return '-'
+    result = df[(df['Market Balance Area'] == mod_col_list[0]) & (df['Direction'] == mod_col_list[1])]
+    return result[look_for]
 
 
 def select(df):
-    df_new = pd.DataFrame(columns=zone_direction, index=df.index.unique())
-    for item in df_new.index:
-        for col in df_new.columns:
-            df_new.loc[item, col] = manipulation(df, item, col)
+    df_new = pd.DataFrame(index=df.index.unique())
+    for col in zone_direction:
+        df_new = pd.merge(df_new, manipulation_fast(df, col), left_index=True, right_index=True)
     return df_new
 
 
@@ -50,6 +45,7 @@ def main():
         num += 1
         df.to_excel(f'{cwd}/input/check{num}.xlsx')
         df = select(df)
+        df.columns = zone_direction
         df.to_excel(f'{cwd}/output/result{num}.xlsx')
 
 
